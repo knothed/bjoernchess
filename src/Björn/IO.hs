@@ -1,14 +1,23 @@
-module Björn.IO where
+module Björn.IO (
+    Parser, tryParse,
+    
+    showSquare, parseSquare,
+    showPieceKind, parsePieceKind,
+    showPiece, parsePiece,
+    showPosition, parsePosition
+) where
 
--- Björn.IO provides in- and output of basic data types like square and piece.
+-- Björn.IO provides in- and output of various game-related data types like square, piece and position.
 
 import Björn.Pieces
-import Control.Monad ((<=<))
+import Björn.Position
+import Control.Monad ((<=<), ap)
 import Control.Monad.Trans (lift)
 import Data.Char (chr, ord)
-import Data.Maybe (fromMaybe, fromJust)
+import Data.List (intercalate)
+import Data.Maybe
 import Data.Tuple (swap)
-import Text.Parsec (ParsecT, runParserT, letter, digit)
+import Text.Parsec
 
 type Parser a = ParsecT String () Maybe a
 
@@ -33,7 +42,6 @@ showPieceKind = pure . flip lookupJust pieceKindTable
 parsePieceKind :: Parser (Color, PieceKind)
 parsePieceKind = lift =<< flip reverseLookup pieceKindTable <$> letter
 
-pieceKindTable :: [((Color, PieceKind), Char)]
 pieceKindTable = [
     ((White, Pawn True), 'P'),  ((Black, Pawn True), 'p'),
     ((White, Pawn False), 'Q'), ((Black, Pawn False), 'q'),
@@ -50,6 +58,54 @@ parsePiece = do
     (color, kind) <- parsePieceKind
     square <- parseSquare
     return $ Piece { color = color, kind = kind, square = square }
+
+---- Position IO ("Ke1,Öe2,Pd2,Pf2,kd8,öd7,pc7,pf7;BKbk;w")
+showPosition :: Position -> String
+showPosition pos = intercalate [blockSep] [pcs, king, pure move] where
+    pcs = intercalate [pieceSep] $ map showPiece $ pieces pos
+    king = if (not . null) king' then king' else [noSpecialMoves]
+    king' = concatMap (showKingMoves pos) [White, Black]
+    move = lookupJust (toMove pos) colorTable
+
+parsePosition :: Parser Position
+parsePosition = do
+    pieces <- sepBy parsePiece (char pieceSep)
+    char blockSep
+    kingMoves <- lift . readKingMoves =<< many (satisfy (/= blockSep))
+    char blockSep
+    toMove <- lift =<< flip reverseLookup colorTable <$> letter
+    return Position { pieces = pieces, kingMoves = kingMoves, toMove = toMove }
+
+showKingMoves :: Position -> Color -> String
+showKingMoves pos col = mapMaybe convert [(knight, hasKnight), (boomerang, hasBoomerang)] where
+  convert (key, move) = if move moves then lookup (key, col) kingMoveTable else Nothing
+  moves = lookupJust col (kingMoves pos)
+
+readKingMoves :: String -> Maybe [(Color, KingMoves)]
+readKingMoves [] = Nothing
+readKingMoves [noSpecialMoves] = Just [mkMoves White False False, mkMoves Black False False]
+readKingMoves str = do
+    entries <- mapM (flip reverseLookup kingMoveTable) str
+    return $ map (mkMoves `ap` has entries knight `ap` has entries boomerang) [White, Black]
+    where
+        has entries some col = any (== (some, col)) entries
+mkMoves col knight boomerang = (col, KingMoves { hasKnight = knight, hasBoomerang = boomerang })
+
+knight = "knight"
+boomerang = "boomerang"
+
+kingMoveTable = [
+    ((knight, White), 'K'), ((knight, Black), 'k'),
+    ((boomerang, White), 'B'), ((boomerang, Black), 'b')
+  ]
+
+colorTable = [
+    (White, 'w'), (Black, 'b')
+  ]
+
+blockSep = ';'
+pieceSep = ','
+noSpecialMoves = '-'
 
 ---- Helpers
 lookupJust :: Eq a => a -> [(a, b)] -> b
