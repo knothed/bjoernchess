@@ -1,22 +1,16 @@
 module Björn.Position where
 
-import Utils.Maybe2
+import Björn.Pieces
 
--- A square on the board given in (x, y) and going from (1, 1) to (8, 8).
-type Square = (Int, Int)
+-- A fully specified position, given by all pieces on the board and additional information like king moves and who is to move.
+data Position = Position {
+    pieces :: [Piece],
+    kingMoves :: [(Color, KingMoves)],
+    toMove :: Color
+}
 
--- The position of a single player on the board.
-data PlayerPosition = PlayerPosition
-                    { pawns :: Maybe2 PawnPos
-                    , king :: Maybe KingPos
-                    , hasBoomerangMove :: Bool
-                    , hasKnightMove :: Bool
-                    , björn :: BjörnPos
-                    } deriving (Show, Eq)
-
-data PawnPos = PawnPos { pos :: Square, hasDoubleMove :: Bool } deriving (Show, Eq)
-type KingPos = Square
-type BjörnPos = Square
-
--- A fully specified position.
-data Position = Position { white :: PlayerPosition, black :: PlayerPosition }
+-- King special-moves are per-player (not per-king) and are thus stored with the player.
+data KingMoves = KingMoves {
+    hasKnight :: Bool,
+    hasBoomerang :: Bool
+}
