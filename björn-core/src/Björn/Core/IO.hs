@@ -1,4 +1,4 @@
-module Björn.IO (
+module Björn.Core.IO (
     Parser, tryParse,
     
     showSquare, parseSquare,
@@ -9,8 +9,8 @@ module Björn.IO (
 
 -- Björn.IO provides in- and output of various game-related data types like square, piece and position.
 
-import Björn.Pieces
-import Björn.Position
+import Björn.Core.Pieces
+import Björn.Core.Position
 import Control.Monad ((<=<), ap)
 import Control.Monad.Trans (lift)
 import Data.Char (chr, ord)

@@ -1,4 +1,4 @@
-module Björn.Pieces where
+module Björn.Core.Pieces where
 
 data Color = Black | White deriving Eq
 

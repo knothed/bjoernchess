@@ -1,6 +1,6 @@
-module Björn.Position where
+module Björn.Core.Position where
 
-import Björn.Pieces
+import Björn.Core.Pieces
 
 -- A fully specified position, given by all pieces on the board and additional information like king moves and who is to move.
 data Position = Position {
