@@ -1,12 +1,12 @@
 module Björn.Core.Pieces where
 
-data Color = Black | White deriving Eq
+data Color = Black | White deriving (Eq, Show)
 
 data PieceKind =
     Björn |
     King |
     Pawn Bool -- has double move
-    deriving Eq
+    deriving (Eq, Show)
 
 -- A square on the board given in (x, y) and going from (1, 1) to (boardSize, boardSize).
 type Square = (Int, Int)
@@ -19,4 +19,4 @@ data Piece = Piece {
     color :: Color,
     kind :: PieceKind,
     square :: Square
-}
+} deriving (Eq, Show)

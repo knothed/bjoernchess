@@ -7,7 +7,7 @@ data Position = Position {
     pieces :: [Piece],
     kingMoves :: [(Color, KingMoves)],
     toMove :: Color
-}
+} deriving (Eq, Show)
 
 -- King special-moves are per-player (not per-king) and are thus stored with the player.
 data KingMoves = KingMoves {

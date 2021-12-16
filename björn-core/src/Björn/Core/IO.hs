@@ -46,7 +46,7 @@ pieceKindTable = [
     ((White, Pawn True), 'P'),  ((Black, Pawn True), 'p'),
     ((White, Pawn False), 'Q'), ((Black, Pawn False), 'q'),
     ((White, King), 'K'),       ((Black, King), 'k'),
-    ((White, Björn), 'Ö'),      ((Black, Björn), 'ö')
+    ((White, Björn), 'B'),      ((Black, Björn), 'b')
   ]
 
 ---- Piece IO ("pb3")
@@ -59,7 +59,7 @@ parsePiece = do
     square <- parseSquare
     return $ Piece { color = color, kind = kind, square = square }
 
----- Position IO ("Ke1,Öe2,Pd2,Pf2,kd8,öd7,pc7,pf7;BKbk;w")
+---- Position IO ("Ke1,Be2,Pd2,Pf2,kd8,bd7,pc7,pf7;BKbk;w")
 showPosition :: Position -> String
 showPosition pos = intercalate [blockSep] [pcs, king, pure move] where
     pcs = intercalate [pieceSep] $ map showPiece $ pieces pos
