@@ -16,8 +16,8 @@ renderPosition position coloring = renderGrid grid where
       width = boardSize + 2,
       height = boardSize + 2,
       cells = flipY (boardSize + 1) cells,
-      wallsForCell = shiftWalls (-1) (-1) (allWalls boardSize boardSize),
-      trailingTextForRow = flip lookup [(HalfInt 7, whoseTurn), (HalfInt 9, kingMovesText White), (HalfInt 10, kingMovesText Black)]
+      walls = shiftWalls (-1) (-1) (allWalls boardSize boardSize),
+      trailingTexts = flip lookup [(8, whoseTurn), (10, kingMovesText White), (11, kingMovesText Black)]
     }
 
     flipY max f x y = f x (max - y)
