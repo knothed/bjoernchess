@@ -21,10 +21,9 @@ data ColoredGrid = ColoredGrid {
     width :: Int,
     height :: Int,
 
-    -- Array of cell of size [width]x[height] and [x][y]-indexed.
+    -- Yield the text of the cell at position (x,y), together with the text color (Nothing for default).
     -- The origin is in the upper(!) left corner.
-    -- Contains the character to be drawn, or Nothing for a space, and the foreground color, or Nothing for default.
-    cells :: [[(Maybe Char, Maybe Color)]],
+    cells :: Int -> Int -> Maybe (Char, Maybe Color),
 
     -- Yield the set of walls a cell at position (x,y) has.
     -- The origin is in the upper(!) left corner.
@@ -65,7 +64,7 @@ renderGrid grid = do mapM_ draw sortedDrawables where
     trailingRows = map (AnyDrawable . ap Trailing (trailingTextForRow grid) . HalfInt) [-1 .. 2 * height grid - 1]
 
     drawablesForCell (x, y) = [
-        AnyDrawable $ uncurry (Cell (integer x) (integer y)) $ cells grid !! x !! y,
+        AnyDrawable $ Cell (integer x) (integer y) (cells grid x y),
         AnyDrawable $ Line (HalfInt (2*x-1)) (integer y) (wallsForCell grid),
         AnyDrawable $ Line (HalfInt (2*x+1)) (integer y) (wallsForCell grid),
         AnyDrawable $ Line (integer x) (HalfInt (2*y-1)) (wallsForCell grid),
@@ -92,10 +91,11 @@ instance Drawable AnyDrawable where
     position (AnyDrawable a) = position a
     draw (AnyDrawable a) = draw a
 
-data Cell = Cell HalfInt HalfInt (Maybe Char) (Maybe Color) -- x, y, content, color
+data Cell = Cell HalfInt HalfInt (Maybe (Char, Maybe Color)) -- x, y, (content, color)
 instance Drawable Cell where
-    position (Cell x y _ _) = (x, y)
-    draw (Cell _ _ char col) = putStrCol col (' ' : fromMaybe ' ' char : " ")
+    position (Cell x y _) = (x, y)
+    draw (Cell _ _ (Just (char, col))) = putStrCol col [' ', char, ' ']
+    draw (Cell _ _ Nothing) = putStrCol Nothing [' ', ' ', ' ']
 
 data Line = Line HalfInt HalfInt (Int -> Int -> [Wall]) -- (x, y) center, wallsForCell
 instance Drawable Line where
@@ -137,14 +137,14 @@ unicodeHorizontalLine = unicodeCorner [Left, Right]
 unicodeVerticalLine = unicodeCorner [Top, Bottom]
 
 unicodeCorner walls = [' ', '╺', '╸', '━', '╻', '┏', '┓', '┳', '╹', '┗', '┛', '┻', '┃', '┣', '┫', '╋'] !! idx where
-    idx = 8 * i (elem Top walls) + 4 * i (elem Bottom walls) + 2 * i (elem Left walls) + 1 * i (elem Right walls)
-    i = fromEnum
+--unicodeCorner walls = [' ', '╶', '╴', '─', '╷', '┌', '┐', '┬', '╵', '└', '┘', '┴', '│', '├', '┤', '┼'] !! idx where
+    idx = 8 * fromEnum (elem Top walls) + 4 * fromEnum (elem Bottom walls) + 2 * fromEnum (elem Left walls) + 1 * fromEnum (elem Right walls)
 
 ---- Helpers
 
 putStrCol :: Maybe Color -> String -> IO ()
 putStrCol Nothing a = putStr a
 putStrCol (Just col) str = do
-    setSGR [ SetColor Foreground Vivid col ]
+    setSGR [ SetColor Foreground Dull col ]
     putStr str
     setSGR [ Reset ]

@@ -4,6 +4,7 @@ module Björn.Core.IO (
     showSquare, parseSquare,
     showPieceKind, parsePieceKind,
     showPiece, parsePiece,
+    showKingMoves, readKingMoves,
     showPosition, parsePosition
 ) where
 
@@ -63,8 +64,7 @@ parsePiece = do
 showPosition :: Position -> String
 showPosition pos = intercalate [blockSep] [pcs, king, pure move] where
     pcs = intercalate [pieceSep] $ map showPiece $ pieces pos
-    king = if (not . null) king' then king' else [noSpecialMoves]
-    king' = concatMap (showKingMoves pos) [White, Black]
+    king = showKingMoves (kingMoves pos)
     move = lookupJust (toMove pos) colorTable
 
 parsePosition :: Parser Position
@@ -76,20 +76,22 @@ parsePosition = do
     toMove <- lift =<< flip reverseLookup colorTable <$> letter
     return Position { pieces = pieces, kingMoves = kingMoves, toMove = toMove }
 
-showKingMoves :: Position -> Color -> String
-showKingMoves pos col = mapMaybe convert [(knight, hasKnight), (boomerang, hasBoomerang)] where
-  convert (key, move) = if move moves then lookup (key, col) kingMoveTable else Nothing
-  moves = lookupJust col (kingMoves pos)
+showKingMoves :: [(Color, KingMoves)] -> String
+showKingMoves moves = ifEmpty [noSpecialMoves] $ concatMap showCol [White, Black] where
+  showCol col = mapMaybe (convert col) [(boomerang, hasBoomerang), (knight, hasKnight)] where
+  convert col (key, move) = if move (lookupJust col moves) then lookup (key, col) kingMoveTable else Nothing
+  ifEmpty a b = if null b then a else b
 
 readKingMoves :: String -> Maybe [(Color, KingMoves)]
-readKingMoves [] = Nothing
-readKingMoves [noSpecialMoves] = Just [mkMoves White False False, mkMoves Black False False]
-readKingMoves str = do
+readKingMoves str 
+  | null str = Nothing
+  | str == [noSpecialMoves] = Just [mkMoves White False False, mkMoves Black False False]
+  | otherwise = do
     entries <- mapM (flip reverseLookup kingMoveTable) str
     return $ map (mkMoves `ap` has entries knight `ap` has entries boomerang) [White, Black]
     where
         has entries some col = any (== (some, col)) entries
-mkMoves col knight boomerang = (col, KingMoves { hasKnight = knight, hasBoomerang = boomerang })
+        mkMoves col knight boomerang = (col, KingMoves { hasKnight = knight, hasBoomerang = boomerang })
 
 knight = "knight"
 boomerang = "boomerang"

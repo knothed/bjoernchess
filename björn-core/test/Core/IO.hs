@@ -7,24 +7,25 @@ import Control.Monad
 import Test.HUnit.Base
 
 ioTests = TestList [
-    TestLabel "Square" $ genDefaultTests squareTests parseSquare showSquare,
-    TestLabel "PieceKind" $ genDefaultTests pieceKindTests parsePieceKind showPieceKind,
-    TestLabel "Piece" $ genDefaultTests pieceTests parsePiece showPiece,
-    TestLabel "Position" $ genInverseTests positionTests parsePosition showPosition
+    TestLabel "Square" $ genDefaultTests squareTests (tryParse parseSquare) showSquare,
+    TestLabel "PieceKind" $ genDefaultTests pieceKindTests (tryParse parsePieceKind) showPieceKind,
+    TestLabel "Piece" $ genDefaultTests pieceTests (tryParse parsePiece) showPiece,
+    TestLabel "Position" $ genInverseTests positionTests (tryParse parsePosition) showPosition,
+    TestLabel "KingMoves" $ genDefaultTests kingMovesTests readKingMoves showKingMoves
   ]
 
-genDefaultTests :: (Eq a, Show a) => [(String, Maybe a)] -> Parser a -> (a -> String) -> Test
-genDefaultTests tests parser show = TestList (concatMap mkTest tests) where
-    mkTest (str, Nothing) = [parseTest str Nothing parser]
-    mkTest (str, Just val) = [parseTest str (Just val) parser, showTest val str show]
+genDefaultTests :: (Eq a, Show a) => [(String, Maybe a)] -> (String -> Maybe a) -> (a -> String) -> Test
+genDefaultTests tests read show = TestList (concatMap mkTest tests) where
+    mkTest (str, Nothing) = [parseTest str Nothing read]
+    mkTest (str, Just val) = [parseTest str (Just val) read, showTest val str show]
 
-genInverseTests :: (Eq a, Show a) => [(String, String -> Maybe String)] -> Parser a -> (a -> String) -> Test
-genInverseTests tests parser show = TestList (map mkTest tests) where
-    mkTest (str, expected) = parseShowInverseTest str expected parser show
-        
-parseTest str expected parser = TestCase $ assertEqual ("Parse " ++ brack str) expected (tryParse parser str)
+genInverseTests :: (Eq a, Show a) => [(String, String -> Maybe String)] -> (String -> Maybe a) -> (a -> String) -> Test
+genInverseTests tests read show = TestList (map mkTest tests) where
+    mkTest (str, expected) = parseShowInverseTest str expected read show
+
+parseTest str expected read = TestCase $ assertEqual ("Parse " ++ brack str) expected (read str)
 showTest val expected show = TestCase $ assertEqual ("Show " ++ brack expected) expected (show val)
-parseShowInverseTest str expected parser show = TestCase $assertEqual ("Show ∘ Parse " ++ brack str) (expected str) (fmap show (tryParse parser str))
+parseShowInverseTest str expected read show = TestCase $ assertEqual ("Show ∘ Parse " ++ brack str) (expected str) (fmap show (read str))
 brack str = "(" ++ str ++ ")"
 
 -- Square IO
@@ -53,6 +54,18 @@ pieceTests = [
     ("Öb1", Nothing)
   ] where
     mkPiece color kind square = Piece { color = color, kind = kind, square = square}
+
+-- KingMoves IO
+-- Attention: These are not safe up to reordering
+kingMovesTests = [
+    ("bk", Just [mkMoves White False False, mkMoves Black True True]),
+    ("B", Just [mkMoves White False True, mkMoves Black False False]),
+    ("Kk", Just [mkMoves White True False, mkMoves Black True False]),
+    ("-", Just [mkMoves White False False, mkMoves Black False False]),
+    ("", Nothing),
+    ("Bw", Nothing)
+  ] where
+    mkMoves col knight boomerang = (col, KingMoves { hasKnight = knight, hasBoomerang = boomerang })
 
 -- Position IO
 -- Attention: These are not safe up to reordering of pieces or special moves
