@@ -10,9 +10,11 @@ build-type:          Simple
 
 executable björnchess
   main-is:             Main.hs
-  other-modules:
   hs-source-dirs:      src
+  other-modules:
+    Björn.CLI.Render.ColoredGrid
 
-  build-depends:       base >= 4.14 && < 4.15,
-                       björn-core >= 0.1.0
+  build-depends:       björn-core >= 0.1.0,
+                       base >= 4.14 && < 4.15,
+                       ansi-terminal >= 0.11.1
   default-language:    Haskell2010

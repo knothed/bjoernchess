@@ -13,4 +13,4 @@ data Position = Position {
 data KingMoves = KingMoves {
     hasKnight :: Bool,
     hasBoomerang :: Bool
-}
+} deriving (Eq, Show)
