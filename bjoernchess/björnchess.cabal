@@ -12,8 +12,8 @@ executable björnchess
   main-is:             Main.hs
   hs-source-dirs:      src
   other-modules:
-    Björn.CLI.Render.ColoredGrid
-    Björn.CLI.Render.Position
+    Björn.CLI.GUI.ColoredGrid
+    Björn.CLI.GUI.RenderBoard
 
   build-depends:       björn-core >= 0.1.0,
                        base >= 4.14 && < 4.15,

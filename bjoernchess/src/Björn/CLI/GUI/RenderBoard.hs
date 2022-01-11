@@ -1,9 +1,9 @@
-module Björn.CLI.Render.Position (renderPosition) where
+module Björn.CLI.GUI.RenderBoard (renderPosition) where
 
 import Björn.Core.Pieces
 import Björn.Core.Position
 import Björn.Core.IO
-import Björn.CLI.Render.ColoredGrid
+import Björn.CLI.GUI.ColoredGrid
 import Data.List
 import Data.Maybe
 import qualified System.Console.ANSI

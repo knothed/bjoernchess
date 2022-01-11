@@ -2,7 +2,7 @@ module Main where
 
 import Björn.Core.Pieces
 import Björn.Core.IO
-import Björn.CLI.Render.Position
+import Björn.CLI.GUI.RenderBoard
 import Data.Maybe
 import qualified System.Console.ANSI
 
