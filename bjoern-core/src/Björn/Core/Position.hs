@@ -1,56 +1,51 @@
 module Björn.Core.Position(
     Position(..), KingMoves(..),
-    whiteBjörn, blackBjörn, whiteKing, blackKing, whitePawns, blackPawns,
     positionValid
 ) where
 
 import Björn.Core.Pieces
+import Björn.Core.PosRepr
 import Control.Monad (liftM2)
-import Data.Maybe (fromJust)
-import Data.List (find, group, sort)
+import Data.Maybe (catMaybes, fromJust)
+import Data.List (find)
 
--- A fully specified position, given by all pieces on the board and additional information like king moves and who is to move.
+-- An inefficent representation of a position.
 data Position = Position {
-    pieces :: [Piece],
+    pieces :: [(Piece, Square, Color)],
     kingMoves :: [(Color, KingMoves)],
-    toMove :: Color
+    toMove :: Color,
+    pendingKnight :: Bool
 } deriving (Eq, Show)
 
--- King special-moves are per-player (not per-king) and are thus stored with the player.
 data KingMoves = KingMoves {
-    hasKnight :: Bool,
-    hasBoomerang :: Bool
+    knight :: Bool,
+    boomerang :: Bool
 } deriving (Eq, Show)
 
--- Piece extractors. These assume that the position is valid.
-pieceMatch knd col pc = kind pc == knd && color pc == col
+instance PosRepr Position where
+    björn pos col = snd3 . fromJust $ find (pieceMatch Björn col) (pieces pos)
+    king pos col = fmap snd3 $ find (pieceMatch King col) (pieces pos)
+    pawns pos col = catMaybes $ map (pawnMatch col) (pieces pos)
+    occupied pos sq = occupant pos sq /= Nothing
+    occupant pos sq = fmap (liftM2 (,) thd3 fst3) $ find (squareMatch sq) (pieces pos)
+    hasBoomerang pos col = boomerang $ fromJust $ lookup col (kingMoves pos)
+    hasKnight pos col = knight $ fromJust $ lookup col (kingMoves pos)
+    pendingKnightCheck = pendingKnight
+    whoseTurn = toMove
 
-theBjörn :: Color -> Position -> Piece
-theBjörn col = fromJust . find (pieceMatch Björn col) . pieces
-theKing col = find (pieceMatch King col) . pieces
-thePawns col = filter (liftM2 (||) (pieceMatch (Pawn True) col) (pieceMatch (Pawn False) col)) . pieces
+pawnMatch col (pc,sq,col') = case (col == col', pc) of (True, Pawn x) -> Just (sq,x); _ -> Nothing
+pieceMatch pc col (pc',_,col') = pc == pc' && col == col'
+squareMatch sq (_,sq',_) = sq == sq'
 
-whiteBjörn = theBjörn White
-blackBjörn = theBjörn Black
-whiteKing = theKing White
-blackKing = theKing Black
-whitePawns = thePawns White
-blackPawns = thePawns Black
+fst3 (a,_,_) = a
+snd3 (_,b,_) = b
+thd3 (_,_,c) = c
 
 -- Check whether a position is valid, meaning:
--- Each player has exactly one björn, at most one king and at most two pawns,
--- no björns or kings are adjacent to each other, no field is occupied twice,
--- no piece has an invalid position and every player has well-specified kingMoves.
--- Use this to validate positions input by the user.
+-- Each player has exactly one björn, at most one king and at most two pawns, and the representation is valid.
 positionValid :: Position -> Bool
-positionValid pos = numberOfPieces && nonAdjacent && noMultiOccupation && piecesOnBoard && kingMovesOk where
+positionValid pos = numberOfPieces && kingMovesOk && posValid pos where
+    kingMovesOk = all (\col -> any ((==) col . fst) (kingMoves pos)) [White, Black]
     numberOfPieces = count Björn White == 1 && count Björn Black == 1 && count King White <= 1 && count King Black <= 1 &&
                      count (Pawn True) White + count (Pawn False) White <= 2 && count (Pawn True) Black + count (Pawn False) Black <= 2 where
         count knd col = length $ filter (pieceMatch knd col) (pieces pos)
-
-    nonAdjacent = distance (square $ whiteBjörn pos) (square $ blackBjörn pos) > 1 &&
-                  case (whiteKing pos, blackKing pos) of (Just w, Just b) -> distance (square w) (square b) > 1; _ -> True
-
-    noMultiOccupation = all ((== 1) . length) $ group . sort . (map square) . pieces $ pos
-    piecesOnBoard = all (squareValid . square) (pieces pos)
-    kingMovesOk = all (\col -> any ((==) col . fst) (kingMoves pos)) [White, Black]

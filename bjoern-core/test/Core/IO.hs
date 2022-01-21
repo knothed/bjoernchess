@@ -1,15 +1,13 @@
 module Core.IO (ioTests) where
 
-import Björn.Core.IO
-import Björn.Core.Pieces
-import Björn.Core.Position
+import Björn.Core
 import Control.Monad
 import Test.HUnit.Base
 
 ioTests = TestList [
     TestLabel "Square" $ genDefaultTests squareTests (tryParse parseSquare) showSquare,
-    TestLabel "PieceKind" $ genDefaultTests pieceKindTests (tryParse parsePieceKind) showPieceKind,
     TestLabel "Piece" $ genDefaultTests pieceTests (tryParse parsePiece) showPiece,
+    TestLabel "PieceSq" $ genDefaultTests pieceSqTests (tryParse parsePieceSq) showPieceSq,
     TestLabel "Position" $ genInverseTests positionTests (tryParse parsePosition) showPosition,
     TestLabel "KingMoves" $ genDefaultTests kingMovesTests readKingMoves showKingMoves
   ]
@@ -28,7 +26,6 @@ showTest val expected show = TestCase $ assertEqual ("Show " ++ brack expected) 
 parseShowInverseTest str expected read show = TestCase $ assertEqual ("Show ∘ Parse " ++ brack str) (expected str) (fmap show (read str))
 brack str = "(" ++ str ++ ")"
 
--- Square IO
 squareTests = [
     ("b1", Just (2,1)),
     ("h8", Just (8,8)),
@@ -38,24 +35,20 @@ squareTests = [
     ("bc", Nothing)
   ]
 
--- PieceKind IO
-pieceKindTests = [
+pieceTests = [
     ("K", Just (White, King)),
     ("b", Just (Black, Björn)),
     ("", Nothing),
     ("w", Nothing)
   ]
 
--- Piece IO
-pieceTests = [
-    ("Pc6", Just $ mkPiece White (Pawn True) (3,6)),
-    ("qb5", Just $ mkPiece Black (Pawn False) (2,5)),
+pieceSqTests = [
+    ("Pc6", Just (Pawn True, (3,6), White)),
+    ("qb5", Just (Pawn False, (2,5), Black)),
     ("ph0", Nothing),
     ("Öb1", Nothing)
-  ] where
-    mkPiece color kind square = Piece { color = color, kind = kind, square = square}
+  ]
 
--- KingMoves IO
 -- Attention: These are not safe up to reordering
 kingMovesTests = [
     ("bk", Just [mkMoves White False False, mkMoves Black True True]),
@@ -65,14 +58,14 @@ kingMovesTests = [
     ("", Nothing),
     ("Bw", Nothing)
   ] where
-    mkMoves col knight boomerang = (col, KingMoves { hasKnight = knight, hasBoomerang = boomerang })
+    mkMoves col k b = (col, KingMoves { knight = k, boomerang = b })
 
--- Position IO
 -- Attention: These are not safe up to reordering of pieces or special moves
 positionTests = [
-    ("Kc4,Bd4,bg2;Bk;b", Just),
-    ("qf3,pa8;-;w", Just),
-    ("Kc4,;kD;b", pure Nothing),
-    ("fc4;;b", pure Nothing),
+    ("Kc4,Bd4,bg2;Bk;n;b", Just),
+    ("qf3,pa8;-;y;w", Just),
+    ("qf3,pa8;-;w", pure Nothing),
+    ("Kc4,;kD;n;b", pure Nothing),
+    ("fc4;;n;b", pure Nothing),
     ("fc4;-;bc3", pure Nothing)
   ]

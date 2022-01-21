@@ -2,8 +2,8 @@ module Björn.Core.IO (
     Parser, tryParse,
     
     showSquare, parseSquare,
-    showPieceKind, parsePieceKind,
     showPiece, parsePiece,
+    showPieceSq, parsePieceSq,
     showKingMoves, readKingMoves,
     showPosition, parsePosition
 ) where
@@ -36,49 +36,52 @@ parseSquare = do
     return (x, y) where
         validate i = if (1 <= i && i <= boardSize) then return i else lift Nothing
 
----- PieceKind IO ("K")
-showPieceKind :: (Color, PieceKind) -> String
-showPieceKind = pure . flip lookupJust pieceKindTable
+---- Piece IO ("K")
+showPiece :: (Color, Piece) -> String
+showPiece = pure . flip lookupJust pieceTable
 
-parsePieceKind :: Parser (Color, PieceKind)
-parsePieceKind = lift =<< flip reverseLookup pieceKindTable <$> letter
+parsePiece :: Parser (Color, Piece)
+parsePiece = lift =<< flip reverseLookup pieceTable <$> letter
 
-pieceKindTable = [
+pieceTable = [
     ((White, Pawn True), 'P'),  ((Black, Pawn True), 'p'),
     ((White, Pawn False), 'Q'), ((Black, Pawn False), 'q'),
     ((White, King), 'K'),       ((Black, King), 'k'),
     ((White, Björn), 'B'),      ((Black, Björn), 'b')
   ]
 
----- Piece IO ("pb3")
-showPiece :: Piece -> String
-showPiece pc = showPieceKind (color pc, kind pc) ++ showSquare (square pc)
+---- PieceSq IO ("pb3")
+showPieceSq :: (Piece, Square, Color) -> String
+showPieceSq (pc, sq, col) = showPiece (col, pc) ++ showSquare sq
 
-parsePiece :: Parser Piece
-parsePiece = do
-    (color, kind) <- parsePieceKind
-    square <- parseSquare
-    return $ Piece { color = color, kind = kind, square = square }
+parsePieceSq :: Parser (Piece, Square, Color)
+parsePieceSq = do
+    (col, pc) <- parsePiece
+    sq <- parseSquare
+    return (pc, sq, col)
 
----- Position IO ("Ke1,Be2,Pd2,Pf2,kd8,bd7,pc7,pf7;BKbk;w")
+---- Position IO ("Ke1,Be2,Pd2,Pf2,kd8,bd7,pc7,pf7;BKbk;y;w")
 showPosition :: Position -> String
-showPosition pos = intercalate [blockSep] [pcs, king, pure move] where
-    pcs = intercalate [pieceSep] $ map showPiece $ pieces pos
+showPosition pos = intercalate [blockSep] [pcs, king, pure knight, pure move] where
+    pcs = intercalate [pieceSep] $ map showPieceSq $ pieces pos
     king = showKingMoves (kingMoves pos)
+    knight = lookupJust (pendingKnight pos) boolTable
     move = lookupJust (toMove pos) colorTable
 
 parsePosition :: Parser Position
 parsePosition = do
-    pieces <- sepBy parsePiece (char pieceSep)
+    pieces <- sepBy parsePieceSq (char pieceSep)
     char blockSep
     kingMoves <- lift . readKingMoves =<< many (satisfy (/= blockSep))
     char blockSep
+    knight <- lift =<< flip reverseLookup boolTable <$> letter
+    char blockSep
     toMove <- lift =<< flip reverseLookup colorTable <$> letter
-    return Position { pieces = pieces, kingMoves = kingMoves, toMove = toMove }
+    return Position { pieces = pieces, kingMoves = kingMoves, toMove = toMove, pendingKnight = knight }
 
 showKingMoves :: [(Color, KingMoves)] -> String
 showKingMoves moves = ifEmpty [noSpecialMoves] $ concatMap showCol [White, Black] where
-  showCol col = mapMaybe (convert col) [(boomerang, hasBoomerang), (knight, hasKnight)] where
+  showCol col = mapMaybe (convert col) [(boomerangKey, boomerang), (knightKey, knight)] where
   convert col (key, move) = if move (lookupJust col moves) then lookup (key, col) kingMoveTable else Nothing
   ifEmpty a b = if null b then a else b
 
@@ -88,22 +91,22 @@ readKingMoves str
   | str == [noSpecialMoves] = Just [mkMoves White False False, mkMoves Black False False]
   | otherwise = do
     entries <- mapM (flip reverseLookup kingMoveTable) str
-    return $ map (mkMoves `ap` has entries knight `ap` has entries boomerang) [White, Black]
+    return $ map (mkMoves `ap` has entries knightKey `ap` has entries boomerangKey) [White, Black]
     where
         has entries some col = any (== (some, col)) entries
-        mkMoves col knight boomerang = (col, KingMoves { hasKnight = knight, hasBoomerang = boomerang })
+        mkMoves col k b = (col, KingMoves { knight = k, boomerang = b })
 
-knight = "knight"
-boomerang = "boomerang"
+knightKey = "knight"
+boomerangKey = "boomerang"
 
 kingMoveTable = [
-    ((knight, White), 'K'), ((knight, Black), 'k'),
-    ((boomerang, White), 'B'), ((boomerang, Black), 'b')
+    ((knightKey, White), 'K'), ((knightKey, Black), 'k'),
+    ((boomerangKey, White), 'B'), ((boomerangKey, Black), 'b')
   ]
 
-colorTable = [
-    (White, 'w'), (Black, 'b')
-  ]
+colorTable = [(White, 'w'), (Black, 'b')]
+
+boolTable = [(True, 'y'), (False, 'n')]
 
 blockSep = ';'
 pieceSep = ','

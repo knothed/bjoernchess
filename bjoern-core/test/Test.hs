@@ -1,5 +1,5 @@
+import Björn.Core
 import Core.IO
-import Björn.Core.Pieces
 import Core.Position
 import Control.Monad
 import Test.HUnit

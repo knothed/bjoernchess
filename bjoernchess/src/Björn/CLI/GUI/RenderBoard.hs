@@ -1,8 +1,6 @@
 module Björn.CLI.GUI.RenderBoard (renderPosition) where
 
-import Björn.Core.Pieces
-import Björn.Core.Position
-import Björn.Core.IO
+import Björn.Core
 import Björn.CLI.GUI.ColoredGrid
 import Data.List
 import Data.Maybe
@@ -10,14 +8,14 @@ import qualified System.Console.ANSI
 
 -- Displays a position in the terminal in a square grid using ANSI coloring.
 -- Requires a monospace font in the terminal.
-renderPosition :: Position -> [(Björn.Core.Pieces.Color, System.Console.ANSI.Color)] -> IO ()
-renderPosition position coloring = renderGrid grid where
+renderPosition :: PosRepr a => a -> [(Björn.Core.Color, System.Console.ANSI.Color)] -> IO ()
+renderPosition pos coloring = renderGrid grid where
     grid = ColoredGrid {
       width = boardSize + 2,
       height = boardSize + 2,
       cells = flipY (boardSize + 1) cells,
       walls = shiftWalls (-1) (-1) (allWalls boardSize boardSize),
-      trailingTexts = flip lookup [(8, whoseTurn), (10, kingMovesText White), (11, kingMovesText Black)]
+      trailingTexts = flip lookup [(8, turn), (10, kingMovesText White), (11, kingMovesText Black)]
     }
 
     flipY max f x y = f x (max - y)
@@ -28,9 +26,8 @@ renderPosition position coloring = renderGrid grid where
       | (x == 0 || x == boardSize + 1) && (y == 0 || y == boardSize + 1) = Nothing
       | (x == 0 || x == boardSize + 1) = Just (last $ showSquare (1, y), Nothing)
       | (y == 0 || y == boardSize + 1) = Just (head $ showSquare (x, 1), Nothing)
-      | otherwise = maybe Nothing draw $ pieceAt x y
-    pieceAt x y = find ((== (x,y)) . square) (pieces position)
-    draw piece = Just (fromJust $ lookup (color piece, kind piece) pieceChars, lookup (color piece) coloring)
+      | otherwise = maybe Nothing draw $ occupant pos (x,y)
+    draw (col, pc) = Just (fromJust $ lookup (col,pc) pieceChars, lookup col coloring)
 
     pieceChars = [
         ((White, Pawn True), '*'),  ((Black, Pawn True), '*'),
@@ -40,7 +37,7 @@ renderPosition position coloring = renderGrid grid where
       ]
     
     -- Text for player to move and special moves
-    whoseTurn = show (toMove position) ++ "'s turn"
-    kingMovesText col = show col ++ " has " ++ (ifEmpty "none" . kingMovesVals . fromJust . lookup col . kingMoves) position
-    kingMovesVals moves = intercalate " + " (["B" | hasBoomerang moves] ++ ["K" | hasKnight moves])
+    turn = show (whoseTurn pos) ++ "'s turn"
+    kingMovesText col = show col ++ " has " ++ ifEmpty "none" (kingMovesVals col)
+    kingMovesVals col = intercalate " + " (["B" | hasBoomerang pos col] ++ ["K" | hasKnight pos col])
     ifEmpty a b = if null b then a else b
