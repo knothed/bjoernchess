@@ -21,9 +21,9 @@ data Color = Black | White deriving (Eq, Show)
 opp White = Black
 opp Black = White
 
--- y-direction of movement
-direction White = 1
-direction Black = -1
+-- The y-direction in which pawns move.
+mvmtDir White = 1
+mvmtDir Black = -1
 
 data Piece =
     Bjorn |

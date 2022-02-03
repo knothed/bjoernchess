@@ -9,6 +9,7 @@ class PosRepr a where
     king :: a -> Color -> Maybe Square
     pawns :: a -> Color -> [(Square, Bool)]
     occupied :: a -> Square -> Bool
+    occupiedBy :: a -> Square -> Color -> Bool
     occupant :: a -> Square -> Maybe (Color, Piece)
     hasBoomerang :: a -> Color -> Bool
     hasKnight :: a -> Color -> Bool

@@ -27,6 +27,7 @@ instance PosRepr Position where
     king pos col = fmap snd3 $ find (pieceMatch King col) (pieces pos)
     pawns pos col = catMaybes $ map (pawnMatch col) (pieces pos)
     occupied pos sq = occupant pos sq /= Nothing
+    occupiedBy pos sq col = fmap fst (occupant pos sq) == Just col
     occupant pos sq = fmap (liftM2 (,) thd3 fst3) $ find (squareMatch sq) (pieces pos)
     hasBoomerang pos col = boomerang $ fromJust $ lookup col (kingMoves pos)
     hasKnight pos col = knight $ fromJust $ lookup col (kingMoves pos)

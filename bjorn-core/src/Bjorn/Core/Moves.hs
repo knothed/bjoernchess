@@ -35,7 +35,22 @@ genBjornMoves pos = map move $ filter valid $ neighbors ourB where
     move sq = mkMove Bjorn ourB sq Normal False
 
 genPawnMoves :: PosRepr a => a -> [Move]
-genPawnMoves pos = []
+genPawnMoves pos = concatMap pawnMoves (pawns pos col) where
+    col = whoseTurn pos
+    pawnMoves (sq, double) = catMaybes (map (move sq double) (neighbors sq)) ++
+                             if double then catMaybes (map (uncurry $ doubleMove sq double) (doubleNeighbors sq)) else [] where
+
+    neighbors (x,y) = filter validSquare [(x+1,y), (x-1,y), (x,y+k)] where k = mvmtDir col
+    doubleNeighbors (x,y) = filter (validSquare . fst) [((x+2,y), Just (x+1,y)), ((x-2,y), Just (x-1,y)), ((x,y+2*k), Just (x,y+k)), ((x+1,y+k), Nothing), ((x-1,y+k), Nothing)]
+                            where k = mvmtDir col
+
+    move from d to = if not (occupied pos to) then move else Nothing
+        where move = Just $ mkMove (Pawn d) from to Normal False
+
+    doubleMove from d to via = case fmap fst (occupant pos to) of
+        Just col' -> if via == Nothing && col /= col' then move else Nothing
+        Nothing -> if not $ any (occupied pos) via then move else Nothing
+        where move = Just $ mkMove (Pawn d) from to Double False
 
 genKingMoves :: PosRepr a => a -> [Move]
 genKingMoves pos = onlyWhen True ourK genNormalMoves ++ onlyWhen (hasKnight pos col) ourK genKnightMoves ++ onlyWhen (hasBoomerang pos col) ourK genBoomerangMoves where
@@ -44,8 +59,8 @@ genKingMoves pos = onlyWhen True ourK genNormalMoves ++ onlyWhen (hasKnight pos 
     ourK = king pos col
     justK = fromJust ourK
     theirK = king pos (opp col)
-    valid sq = all ((> 1) . dist sq) theirK && not (elem sq inCheck) && all ((/=) col . fst) (occupant pos sq)
-    inCheck = concatMap (\(x,y) -> [(x-1,y-k), (x+1,y-k)]) . map fst $ pawns pos (opp col) where k = direction col
+    valid sq = all ((> 1) . dist sq) theirK && not (elem sq inCheck) && not (occupiedBy pos sq col)
+    inCheck = concatMap (\(x,y) -> [(x-1,y-k), (x+1,y-k)]) . map fst $ pawns pos (opp col) where k = mvmtDir col
     -- inCheck (x,y) = any (flip elem [(x-1,y+k), (x+1,y+k)] . fst) $ pawns pos (opp col) where k = direction col
 
     genNormalMoves = concatMap moves . filter valid . neighbors where
@@ -63,7 +78,7 @@ genKingMoves pos = onlyWhen True ourK genNormalMoves ++ onlyWhen (hasKnight pos 
             (False, False) -> runBothDirs (x,y) (1,1) ++ runBothDirs (x,y) (1,-1) -- all 4 directions
             (False, True) -> runBothDirs (x,y) (1,1) -- 2 directions
             (True, False) -> runBothDirs (x,y) (1,1) -- 2 directions
-            (True, True) -> runBothDirs (x,y) dir where -- 1 direction, mustn't be into the corner
+            (True, True) -> runBothDirs (x,y) dir where -- 1 jo, mustn't be into the corner
               dir = if x == 1 then (1,1) else (-1,1)
 
         runBothDirs :: Square -> (Int, Int) -> [Square]
@@ -88,9 +103,8 @@ genKingMoves pos = onlyWhen True ourK genNormalMoves ++ onlyWhen (hasKnight pos 
               | first = follow (x+dx,y+dy) (dx,dy) start False -- don't add the start square
               | (x,y) == start = ([], True)
               | not (valid (x,y)) = ([], False)
-              | canBeat (x,y) = ([(x,y)], False)
+              | not (occupiedBy pos (x,y) col) = ([(x,y)], False)
               | otherwise = let (a,b) = follow (x+dx,y+dy) (dx,dy) start False in ((x,y):a, b)
-            canBeat sq = any ((/=) col . fst) (occupant pos sq)
 
 
 -- All onboard squares with distance 1.
