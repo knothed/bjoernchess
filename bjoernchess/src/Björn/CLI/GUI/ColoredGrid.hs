@@ -3,6 +3,7 @@ module Björn.CLI.GUI.ColoredGrid (ColoredGrid(..), Wall(..), allWalls, renderGr
 import Prelude hiding (Left, Right)
 import Control.Monad (mapM, when)
 import Data.Maybe (fromMaybe)
+import Data.Word
 import System.Console.ANSI
 
 -- A grid which is drawn using unicode's box drawing characters.
@@ -12,9 +13,9 @@ data ColoredGrid = ColoredGrid {
     width :: Int,
     height :: Int,
 
-    -- Yield the text of the cell at position (x,y), together with the text color (Nothing for default).
+    -- Yield the text of the cell at position (x,y), together with the palette text color (Nothing for default).
     -- The origin is in the upper(!) left corner.
-    cells :: Int -> Int -> Maybe (Char, Maybe Color),
+    cells :: Int -> Int -> Maybe (Char, Maybe Word8),
 
     -- Yield the set of walls a cell at position (x,y) has.
     -- The origin is in the upper(!) left corner.
@@ -95,9 +96,9 @@ unicodeHorizLine = unicodeCorner [Left, Right]
 unicodeVertLine = unicodeCorner [Top, Bottom]
 
 -- Helpers
-putStrCol :: Maybe Color -> String -> IO ()
+putStrCol :: Maybe Word8 -> String -> IO ()
 putStrCol Nothing a = putStr a
 putStrCol (Just col) str = do
-    setSGR [ SetColor Foreground Dull col ]
+    setSGR [ SetPaletteColor Foreground col ]
     putStr str
     setSGR [ Reset ]

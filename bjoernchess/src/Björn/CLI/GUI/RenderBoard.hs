@@ -1,15 +1,17 @@
-module Björn.CLI.GUI.RenderBoard (renderPosition) where
+module Björn.CLI.GUI.RenderBoard (BoardColor(..), renderBoard) where
 
 import Björn.Core
 import Björn.CLI.GUI.ColoredGrid
 import Data.List
 import Data.Maybe
-import qualified System.Console.ANSI
+import Data.Word
+
+data BoardColor = Color Color | Checker deriving (Eq)
 
 -- Displays a position in the terminal in a square grid using ANSI coloring.
 -- Requires a monospace font in the terminal.
-renderPosition :: PosRepr a => a -> [(Björn.Core.Color, System.Console.ANSI.Color)] -> IO ()
-renderPosition pos coloring = renderGrid grid where
+renderBoard :: PosRepr a => a -> [(BoardColor, Word8)] -> IO ()
+renderBoard pos coloring = renderGrid grid where
     grid = ColoredGrid {
       width = boardSize + 2,
       height = boardSize + 2,
@@ -26,9 +28,11 @@ renderPosition pos coloring = renderGrid grid where
       | (x == 0 || x == boardSize + 1) && (y == 0 || y == boardSize + 1) = Nothing
       | (x == 0 || x == boardSize + 1) = Just (last $ showSquare (1, y), Nothing)
       | (y == 0 || y == boardSize + 1) = Just (head $ showSquare (x, 1), Nothing)
-      | otherwise = maybe Nothing draw $ occupant pos (x,y)
-    draw (col, pc) = Just (fromJust $ lookup (col,pc) pieceChars, lookup col coloring)
+      | otherwise = maybe evenOdd draw $ occupant pos (x,y) where
+        evenOdd = if even (x+y) then Just (checkerboardChar, lookup Checker coloring) else Nothing
+        draw (col, pc) = Just (fromJust $ lookup (col,pc) pieceChars, lookup (Color col) coloring)
 
+    checkerboardChar = '·'
     pieceChars = [
         ((White, Pawn True), '*'),  ((Black, Pawn True), '*'),
         ((White, Pawn False), '•'), ((Black, Pawn False), '•'),
