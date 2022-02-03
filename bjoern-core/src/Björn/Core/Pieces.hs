@@ -17,9 +17,11 @@ dist a b = max (abs (fst a - fst b)) (abs (snd a - snd b))
 -- Color and Pieces
 
 data Color = Black | White deriving (Eq, Show)
-(!) White = Black
-(!) Black = White
 
+opp White = Black
+opp Black = White
+
+-- y-direction of movement
 direction White = 1
 direction Black = -1
 
