@@ -1,4 +1,4 @@
-module Björn.CLI.GUI.ColoredGrid (ColoredGrid(..), Wall(..), allWalls, renderGrid) where
+module Bjorn.CLI.GUI.ColoredGrid (ColoredGrid(..), Wall(..), allWalls, renderGrid) where
 
 import Prelude hiding (Left, Right)
 import Control.Monad (mapM, when)

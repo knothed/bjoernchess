@@ -1,4 +1,4 @@
-module Björn.Core.IO (
+module Bjorn.Core.IO (
     Parser, tryParse,
     
     showSquare, parseSquare,
@@ -8,10 +8,10 @@ module Björn.Core.IO (
     showPosition, parsePosition
 ) where
 
--- Björn.IO provides in- and output of various game-related data types like square, piece and position.
+-- Bjorn.IO provides in- and output of various game-related data types like square, piece and position.
 
-import Björn.Core.Pieces
-import Björn.Core.Position
+import Bjorn.Core.Pieces
+import Bjorn.Core.Position
 import Control.Monad ((<=<), ap)
 import Control.Monad.Trans (lift)
 import Data.Char (chr, ord)
@@ -47,7 +47,7 @@ pieceTable = [
     ((White, Pawn True), 'P'),  ((Black, Pawn True), 'p'),
     ((White, Pawn False), 'Q'), ((Black, Pawn False), 'q'),
     ((White, King), 'K'),       ((Black, King), 'k'),
-    ((White, Björn), 'B'),      ((Black, Björn), 'b')
+    ((White, Bjorn), 'B'),      ((Black, Bjorn), 'b')
   ]
 
 ---- PieceSq IO ("pb3")

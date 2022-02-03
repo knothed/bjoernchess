@@ -1,6 +1,6 @@
 module Core.IO (ioTests) where
 
-import Björn.Core
+import Bjorn.Core
 import Control.Monad
 import Test.HUnit.Base
 
@@ -37,7 +37,7 @@ squareTests = [
 
 pieceTests = [
     ("K", Just (White, King)),
-    ("b", Just (Black, Björn)),
+    ("b", Just (Black, Bjorn)),
     ("", Nothing),
     ("w", Nothing)
   ]

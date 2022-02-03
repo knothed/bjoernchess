@@ -1,7 +1,7 @@
-module Björn.CLI.GUI.RenderBoard (BoardColor(..), renderBoard) where
+module Bjorn.CLI.GUI.RenderBoard (BoardColor(..), renderBoard) where
 
-import Björn.Core
-import Björn.CLI.GUI.ColoredGrid
+import Bjorn.Core
+import Bjorn.CLI.GUI.ColoredGrid
 import Data.List
 import Data.Maybe
 import Data.Word
@@ -37,7 +37,7 @@ renderBoard pos coloring = renderGrid grid where
         ((White, Pawn True), '*'),  ((Black, Pawn True), '*'),
         ((White, Pawn False), '•'), ((Black, Pawn False), '•'),
         ((White, King), '†'),       ((Black, King), '†'),
-        ((White, Björn), '▲'),      ((Black, Björn), '▼')
+        ((White, Bjorn), '▲'),      ((Black, Bjorn), '▼')
       ]
     
     -- Text for player to move and special moves

@@ -1,10 +1,10 @@
-module Björn.Core.Position(
+module Bjorn.Core.Position(
     Position(..), KingMoves(..),
     positionValid
 ) where
 
-import Björn.Core.Pieces
-import Björn.Core.PosRepr
+import Bjorn.Core.Pieces
+import Bjorn.Core.PosRepr
 import Control.Monad (liftM2)
 import Data.Maybe (catMaybes, fromJust)
 import Data.List (find)
@@ -23,7 +23,7 @@ data KingMoves = KingMoves {
 } deriving (Eq, Show)
 
 instance PosRepr Position where
-    björn pos col = snd3 . fromJust $ find (pieceMatch Björn col) (pieces pos)
+    bjorn pos col = snd3 . fromJust $ find (pieceMatch Bjorn col) (pieces pos)
     king pos col = fmap snd3 $ find (pieceMatch King col) (pieces pos)
     pawns pos col = catMaybes $ map (pawnMatch col) (pieces pos)
     occupied pos sq = occupant pos sq /= Nothing
@@ -42,10 +42,10 @@ snd3 (_,b,_) = b
 thd3 (_,_,c) = c
 
 -- Check whether a position is valid, meaning:
--- Each player has exactly one björn, at most one king and at most two pawns, and the representation is valid.
+-- Each player has exactly one bjorn, at most one king and at most two pawns, and the representation is valid.
 positionValid :: Position -> Bool
 positionValid pos = numberOfPieces && kingMovesOk && posValid pos where
     kingMovesOk = all (\col -> any ((==) col . fst) (kingMoves pos)) [White, Black]
-    numberOfPieces = count Björn White == 1 && count Björn Black == 1 && count King White <= 1 && count King Black <= 1 &&
+    numberOfPieces = count Bjorn White == 1 && count Bjorn Black == 1 && count King White <= 1 && count King Black <= 1 &&
                      count (Pawn True) White + count (Pawn False) White <= 2 && count (Pawn True) Black + count (Pawn False) Black <= 2 where
         count knd col = length $ filter (pieceMatch knd col) (pieces pos)

@@ -1,9 +1,9 @@
-module Björn.Core.Moves (
+module Bjorn.Core.Moves (
     Move(..), MoveType(..), genMoves
 ) where
 
-import Björn.Core.Pieces
-import Björn.Core.PosRepr
+import Bjorn.Core.Pieces
+import Bjorn.Core.PosRepr
 import Data.Maybe
 import Data.List
 
@@ -23,16 +23,16 @@ mkMove pc src dest mtype knight = Move { piece = pc, src = src, dest = dest, mov
 ----- MOVE-GEN -----
 
 genMoves :: PosRepr a => a -> [Move]
-genMoves pos = genBjörnMoves pos ++ genPawnMoves pos ++ genKingMoves pos
+genMoves pos = genBjornMoves pos ++ genPawnMoves pos ++ genKingMoves pos
 
-genBjörnMoves :: PosRepr a => a -> [Move]
-genBjörnMoves pos = map move $ filter valid $ neighbors ourB where
+genBjornMoves :: PosRepr a => a -> [Move]
+genBjornMoves pos = map move $ filter valid $ neighbors ourB where
     col = whoseTurn pos
-    ourB = björn pos col
-    theirB = björn pos (opp col)
+    ourB = bjorn pos col
+    theirB = bjorn pos (opp col)
     valid sq = dist sq theirB > 1 && all canBeat (occupant pos sq)
     canBeat (col', pc) = col' /= col && (pc == Pawn True || pc == Pawn False)
-    move sq = mkMove Björn ourB sq Normal False
+    move sq = mkMove Bjorn ourB sq Normal False
 
 genPawnMoves :: PosRepr a => a -> [Move]
 genPawnMoves pos = []

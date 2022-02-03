@@ -1,7 +1,7 @@
 module Main where
 
-import Björn.Core
-import Björn.CLI.GUI.RenderBoard
+import Bjorn.Core
+import Bjorn.CLI.GUI.RenderBoard
 import Data.Maybe
 import System.Console.ANSI (xterm24LevelGray, xterm6LevelRGB)
 

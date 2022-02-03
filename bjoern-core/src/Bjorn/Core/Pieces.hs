@@ -1,4 +1,4 @@
-module Björn.Core.Pieces where
+module Bjorn.Core.Pieces where
 
 -- A square on the board given in (x, y) and going from (1, 1) to (boardSize, boardSize).
 type Square = (Int, Int)
@@ -26,7 +26,7 @@ direction White = 1
 direction Black = -1
 
 data Piece =
-    Björn |
+    Bjorn |
     King |
     Pawn Bool -- has double move
     deriving (Eq, Show)

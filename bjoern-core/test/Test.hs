@@ -1,4 +1,4 @@
-import Björn.Core
+import Bjorn.Core
 import Core.IO
 import Core.Position
 import Control.Monad

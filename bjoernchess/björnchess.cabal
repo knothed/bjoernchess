@@ -1,6 +1,6 @@
 cabal-version:       2.0
 
-name:                björnchess
+name:                bjornchess
 version:             0.1.0
 author:              David Knothe
 maintainer:          dknothe314@me.com
@@ -8,14 +8,14 @@ maintainer:          dknothe314@me.com
 build-type:          Simple
 
 
-executable björnchess
+executable bjornchess
   main-is:             Main.hs
   hs-source-dirs:      src
   other-modules:
-    Björn.CLI.GUI.ColoredGrid
-    Björn.CLI.GUI.RenderBoard
+    Bjorn.CLI.GUI.ColoredGrid
+    Bjorn.CLI.GUI.RenderBoard
 
-  build-depends:       björn-core >= 0.1.0,
+  build-depends:       bjorn-core >= 0.1.0,
                        base >= 4.14 && < 4.15,
                        ansi-terminal >= 0.11.1
   default-language:    Haskell2010
