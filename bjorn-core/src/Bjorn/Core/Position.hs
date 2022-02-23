@@ -5,6 +5,7 @@ module Bjorn.Core.Position(
 
 import Bjorn.Core.Pieces
 import Bjorn.Core.PosRepr
+import Bjorn.Core.Utils
 import Control.Monad (liftM2)
 import Data.Maybe (catMaybes, fromJust)
 import Data.List (find)
@@ -37,10 +38,6 @@ instance PosRepr Position where
 pawnMatch col (pc,sq,col') = case (col == col', pc) of (True, Pawn x) -> Just (sq,x); _ -> Nothing
 pieceMatch pc col (pc',_,col') = pc == pc' && col == col'
 squareMatch sq (_,sq',_) = sq == sq'
-
-fst3 (a,_,_) = a
-snd3 (_,b,_) = b
-thd3 (_,_,c) = c
 
 -- Check whether a position is valid, meaning:
 -- Each player has exactly one bjorn, at most one king and at most two pawns, and the representation is valid.

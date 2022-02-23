@@ -30,3 +30,6 @@ data Piece =
     King |
     Pawn Bool -- has double move
     deriving (Eq, Show)
+
+isPawn (Pawn _) = True
+isPawn _ = False

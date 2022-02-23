@@ -17,11 +17,13 @@ library
                        parsec >= 3.1.15
   default-language:    Haskell2010
   other-modules:
+    Bjorn.Core.ApplyMove
     Bjorn.Core.IO
-    Bjorn.Core.Moves
+    Bjorn.Core.MoveGen
     Bjorn.Core.Pieces
     Bjorn.Core.Position
     Bjorn.Core.PosRepr
+    Bjorn.Core.Utils
 
 test-suite tests
   type:                exitcode-stdio-1.0

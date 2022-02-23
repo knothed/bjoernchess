@@ -1,4 +1,4 @@
-module Bjorn.Core.Moves (
+module Bjorn.Core.MoveGen (
     Move(..), MoveType(..), genMoves
 ) where
 
@@ -19,11 +19,12 @@ data MoveType = Normal | Boomerang | Knight | Double deriving (Eq, Show)
 
 mkMove pc src dest mtype knight = Move { piece = pc, src = src, dest = dest, moveType = mtype, knightCheck = knight }
 
-
 ----- MOVE-GEN -----
 
 genMoves :: PosRepr a => a -> [Move]
-genMoves pos = genBjornMoves pos ++ genPawnMoves pos ++ genKingMoves pos
+genMoves pos = allMoves ++ if pendingKnightCheck pos then map returnKnightCheck allMoves else [] where
+    allMoves = genBjornMoves pos ++ genPawnMoves pos ++ genKingMoves pos
+    returnKnightCheck mv = mkMove (piece mv) (src mv) (dest mv) (moveType mv) True
 
 genBjornMoves :: PosRepr a => a -> [Move]
 genBjornMoves pos = map move $ filter valid $ neighbors ourB where
@@ -31,7 +32,7 @@ genBjornMoves pos = map move $ filter valid $ neighbors ourB where
     ourB = bjorn pos col
     theirB = bjorn pos (opp col)
     valid sq = dist sq theirB > 1 && all canBeat (occupant pos sq)
-    canBeat (col', pc) = col' /= col && (pc == Pawn True || pc == Pawn False)
+    canBeat (col', pc) = col' /= col && isPawn pc
     move sq = mkMove Bjorn ourB sq Normal False
 
 genPawnMoves :: PosRepr a => a -> [Move]
@@ -61,7 +62,7 @@ genKingMoves pos = onlyWhen True ourK genNormalMoves ++ onlyWhen (hasKnight pos 
     theirK = king pos (opp col)
     valid sq = all ((> 1) . dist sq) theirK && not (elem sq inCheck) && not (occupiedBy pos sq col)
     inCheck = concatMap (\(x,y) -> [(x-1,y-k), (x+1,y-k)]) . map fst $ pawns pos (opp col) where k = mvmtDir col
-    -- inCheck (x,y) = any (flip elem [(x-1,y+k), (x+1,y+k)] . fst) $ pawns pos (opp col) where k = direction col
+    -- inCheck (x,y) = any (flip elem [(x-1,y+k), (x+1,y+k)] . fst) $ pawns pos (opp col) where k = mvmtDir col
 
     genNormalMoves = concatMap moves . filter valid . neighbors where
         moves sq = [mkMove King justK sq Normal False] ++ [mkMove King justK sq Normal True | all (knightAway justK) theirK && not (pendingKnightCheck pos)]
@@ -78,7 +79,7 @@ genKingMoves pos = onlyWhen True ourK genNormalMoves ++ onlyWhen (hasKnight pos 
             (False, False) -> runBothDirs (x,y) (1,1) ++ runBothDirs (x,y) (1,-1) -- all 4 directions
             (False, True) -> runBothDirs (x,y) (1,1) -- 2 directions
             (True, False) -> runBothDirs (x,y) (1,1) -- 2 directions
-            (True, True) -> runBothDirs (x,y) dir where -- 1 jo, mustn't be into the corner
+            (True, True) -> runBothDirs (x,y) dir where -- 1 direction, mustn't be into the corner
               dir = if x == 1 then (1,1) else (-1,1)
 
         runBothDirs :: Square -> (Int, Int) -> [Square]

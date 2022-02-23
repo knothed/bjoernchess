@@ -12,6 +12,7 @@ module Bjorn.Core.IO (
 
 import Bjorn.Core.Pieces
 import Bjorn.Core.Position
+import Bjorn.Core.Utils
 import Control.Monad ((<=<), ap)
 import Control.Monad.Trans (lift)
 import Data.Char (chr, ord)
@@ -112,9 +113,8 @@ blockSep = ';'
 pieceSep = ','
 noSpecialMoves = '-'
 
----- Helpers
-lookupJust :: Eq a => a -> [(a, b)] -> b
-lookupJust a = fromJust . lookup a
+---- Move IO ("KBf2, +pcd3")
+-- todo
 
 reverseLookup :: Eq b => b -> [(a, b)] -> Maybe a
 reverseLookup a = lookup a . map swap
