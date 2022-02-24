@@ -65,12 +65,12 @@ genKingMoves pos = onlyWhen True ourK genNormalMoves ++ onlyWhen (hasKnight pos 
     -- inCheck (x,y) = any (flip elem [(x-1,y+k), (x+1,y+k)] . fst) $ pawns pos (opp col) where k = mvmtDir col
 
     genNormalMoves = concatMap moves . filter valid . neighbors where
-        moves sq = [mkMove King justK sq Normal False] ++ [mkMove King justK sq Normal True | all (knightAway justK) theirK && not (pendingKnightCheck pos)]
+        moves sq = [mkMove King justK sq Normal False] ++ [mkMove King justK sq Normal True | any (knightAway justK) theirK && not (pendingKnightCheck pos)]
 
     genKnightMoves = map move . filter valid . knights where
         move sq = mkMove King justK sq Knight False
 
-    genBoomerangMoves sq = map move . rmDups . diagonals $ sq where
+    genBoomerangMoves sq = map move . rmDups . filter ((>= 2) . dist sq) . diagonals $ sq where
         move sq = mkMove King justK sq Boomerang False
         rmDups = map head . group . sort
 
@@ -104,7 +104,7 @@ genKingMoves pos = onlyWhen True ourK genNormalMoves ++ onlyWhen (hasKnight pos 
               | first = follow (x+dx,y+dy) (dx,dy) start False -- don't add the start square
               | (x,y) == start = ([], True)
               | not (valid (x,y)) = ([], False)
-              | not (occupiedBy pos (x,y) col) = ([(x,y)], False)
+              | occupiedBy pos (x,y) (opp col) = ([(x,y)], False)
               | otherwise = let (a,b) = follow (x+dx,y+dy) (dx,dy) start False in ((x,y):a, b)
 
 
