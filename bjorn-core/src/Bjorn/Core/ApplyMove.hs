@@ -31,12 +31,15 @@ applyMove :: Position -> Move -> Position
 applyMove pos move = Position { pieces = newPieces, kingMoves = newKingMoves, toMove = opp player, pendingKnight = newPendingKnight } where
     player = toMove pos
     
-    newPieces = newPiece : (removeKing . removeSrcDest) (pieces pos)
-    newPiece = (pawnMod (piece move), dest move, player)
-    pawnMod (Pawn True) = Pawn (moveType move /= Double)
-    pawnMod x = x
+    newPieces = promote movedPiece : (removeKing . removeSrcDest) (pieces pos)
+    movedPiece = (pawnMod (piece move), dest move, player)
     removeSrcDest = filter (not . flip elem [src move, dest move] . snd3)
     removeKing = if givesPawnCheck pos move || knightCheck move then filter (\(pc, _, col) -> pc == King && col == opp player) else id
+
+    promotionRank = if player == Black then 1 else boardSize
+    promote (pc, sq, col) = if isPawn pc && (snd sq == promotionRank) then (King, sq, col) else (pc, sq, col)
+    pawnMod (Pawn True) = Pawn (moveType move /= Double)
+    pawnMod x = x
 
     newKingMoves = [(player, modify $ lookupJust player (kingMoves pos)), (opp player, lookupJust (opp player) (kingMoves pos))]
     modify moves = KingMoves { knight = knight moves && moveType move /= Knight, boomerang = boomerang moves && moveType move /= Boomerang }
