@@ -13,7 +13,7 @@ class PosRepr a where
     occupant :: a -> Square -> Maybe (Color, Piece)
     hasBoomerang :: a -> Color -> Bool
     hasKnight :: a -> Color -> Bool
-    pendingKnightCheck :: a -> Bool -- ?
+    pendingKnightCheck :: a -> Bool
     whoseTurn :: a -> Color
 
 allPieces :: PosRepr a => a -> [(Piece, Square, Color)]

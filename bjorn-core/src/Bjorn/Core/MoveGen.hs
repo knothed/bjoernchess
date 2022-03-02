@@ -1,5 +1,5 @@
 module Bjorn.Core.MoveGen (
-    Move(..), MoveType(..), genMoves
+    Move(..), MoveType(..), genMoves, genPawnMoves
 ) where
 
 import Bjorn.Core.Pieces

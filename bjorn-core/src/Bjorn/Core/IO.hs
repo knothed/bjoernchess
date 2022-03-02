@@ -5,18 +5,22 @@ module Bjorn.Core.IO (
     showPiece, parsePiece,
     showPieceSq, parsePieceSq,
     showKingMoves, readKingMoves,
-    showPosition, parsePosition
+    showPosition, parsePosition,
+    showMove, parseMove
 ) where
 
 -- Bjorn.IO provides in- and output of various game-related data types like square, piece and position.
 
+import Bjorn.Core.ApplyMove
+import Bjorn.Core.MoveGen
 import Bjorn.Core.Pieces
 import Bjorn.Core.Position
+import Bjorn.Core.PosRepr
 import Bjorn.Core.Utils
-import Control.Monad ((<=<), ap)
+import Control.Monad ((<=<), ap, when)
 import Control.Monad.Trans (lift)
-import Data.Char (chr, ord)
-import Data.List (intercalate)
+import Data.Char (chr, ord, isLetter, isDigit)
+import Data.List (delete, intercalate)
 import Data.Maybe
 import Data.Tuple (swap)
 import Text.Parsec
@@ -32,10 +36,17 @@ showSquare (x, y) = (chr (ord 'a' - 1 + x)) : show y
 
 parseSquare :: Parser Square
 parseSquare = do
-    x <- validate =<< (\c -> ord c - ord 'a' + 1) <$> letter
-    y <- validate =<< read . pure <$> digit
-    return (x, y) where
-        validate i = if (1 <= i && i <= boardSize) then return i else lift Nothing
+  x <- letter
+  y <- digit
+  lift $ toSquare [x,y]
+
+-- The argument must be of the form [letter, digit].
+toSquare :: String -> Maybe Square
+toSquare [a,b] = do
+  x <- validate $ (ord a - ord 'a' + 1)
+  y <- validate $ read [b]
+  return (x, y) where
+    validate i = if (1 <= i && i <= boardSize) then return i else Nothing
 
 ---- Piece IO ("K")
 showPiece :: (Color, Piece) -> String
@@ -113,8 +124,106 @@ blockSep = ';'
 pieceSep = ','
 noSpecialMoves = '-'
 
----- Move IO ("KBf2, +pcd3")
--- todo
-
 reverseLookup :: Eq b => b -> [(a, b)] -> Maybe a
 reverseLookup a = lookup a . map swap
+
+
+---- Move IO ("KBf2#, +cd3")
+
+-- The move must be valid in the position.
+showMove :: PosRepr a => a -> Move -> String
+showMove pos move = catMaybes [returnKnight, pc, srcX, srcY, mtype, destX, destY, check, mate] where
+    when x b = if b then Just x else Nothing
+    returnKnight = (cross `when`) $ pendingKnightCheck pos && knightCheck move
+    pc = lookup (piece move) pieceDict
+    (x1,_):other = map src $ filter ((==) (dest move) . dest) (genPawnMoves pos) -- 1 or 2 elements if a pawn moves
+    srcX = ((head . showSquare . src) move `when`) $ isPawn (piece move) && not (null other) && x1 /= x2 where (x2,_) = head other
+    srcY = ((last . showSquare . src) move `when`) $ isPawn (piece move) && not (null other) && x1 == x2 where (x2,_) = head other
+    mtype = lookup (moveType move) moveTypeDict
+    destX:destY:_ = map return $ showSquare (dest move)
+    check = (cross `when`) $ givesPawnCheck pos move || not (pendingKnightCheck pos) && knightCheck move
+    mate = (hash `when`) $ moveWins pos move
+
+cross = '+'
+hash = '#'
+pieceDict = [(King, 'K'), (Bjorn, 'B')]
+moveTypeDict = [(Knight, 'S'), (Boomerang, 'B')]
+
+data MoveParseError = Syntax | PieceNotAvailable | SpecialMoveNotAvailable | AmbiguousMove | UnreachableDest | CheckNotPossible | NoMate deriving (Eq, Show)
+
+parseMove :: PosRepr a => a -> String -> Either MoveParseError Move
+parseMove pos str = case tryParse parseMoveStencil str of
+  Nothing -> Left Syntax
+  Just stencil -> do
+    let player = whoseTurn pos
+    let allMoves = genMoves pos
+    -- Can return knight check?
+    when (returnKnightCheck' stencil && not (pendingKnightCheck pos)) (Left CheckNotPossible)
+    when (returnKnightCheck' stencil && check' stencil) (Left Syntax)
+    -- Piece available?
+    when (piece' stencil == King && null (king pos player)) (Left PieceNotAvailable)
+    when (isPawn (piece' stencil) && not (any (srcOk . fst) (pawns pos player))) (Left PieceNotAvailable)
+    -- Special move available?
+    when (moveType' stencil == Knight && not (hasKnight pos player)) (Left SpecialMoveNotAvailable)
+    when (moveType' stencil == Boomerang && not (hasBoomerang pos player)) (Left SpecialMoveNotAvailable)
+    -- Find exact move, modulo knight check
+    let moves = filter (matches stencil) allMoves
+    case filter (not . knightCheck) moves of
+      [] -> Left UnreachableDest
+      _:_:[] -> Left AmbiguousMove
+      [move] -> do
+        -- Consider knight check and pawn check
+        when (isPawn (piece' stencil) && check' stencil && not (givesPawnCheck pos move)) (Left CheckNotPossible)
+        when (piece' stencil == Bjorn && check' stencil) (Left CheckNotPossible)
+        let isKnightCheck = returnKnightCheck' stencil || (piece' stencil == King && check' stencil)
+        case filter (((==) isKnightCheck) . knightCheck) moves of
+          [move] -> when (mate' stencil && not (moveWins pos move)) (Left NoMate) >> return move
+          _ -> Left CheckNotPossible
+    where
+      srcOk sq = all ((==) (fst sq)) (srcX stencil) && all ((==) (snd sq)) (srcY stencil)
+      matches stencil move = pieceEq (piece move) (piece' stencil) && dest move == dest' stencil && srcOk (src move)
+      pieceEq a b = isPawn a && isPawn b || a == b
+
+
+data MoveStencil = MoveStencil {
+  returnKnightCheck' :: Bool,
+  piece' :: Piece, -- (Pawn _), Bjorn, King
+  srcX :: Maybe Int,
+  srcY :: Maybe Int,
+  dest' :: Square,
+  moveType' :: MoveType,
+  check' :: Bool,
+  mate' :: Bool
+} deriving Show
+
+mkStencil knight pc srcX srcY dest mtype check mate = MoveStencil { returnKnightCheck' = knight, piece' = pc, srcX = srcX, srcY = srcY, dest' = dest, moveType' = mtype, check' = check, mate' = mate }
+
+parseMoveStencil :: Parser MoveStencil
+parseMoveStencil = do
+  returnKnight <- has cross
+  pc <- lookupChar (Pawn False) (map swap pieceDict)
+  mtype <- lookupChar Normal (map swap moveTypeDict)
+  a <- letter <|> digit
+  b <- letter <|> digit
+  if isLetter a && isDigit b then do
+    dest <- lift $ toSquare [a,b]
+    check <- has cross
+    mate <- has hash
+    return $ mkStencil returnKnight pc Nothing Nothing dest mtype check mate
+  else do
+    when (not (isPawn pc)) (fail "Specify src only for pawn")
+    c <- letter <|> digit
+    if isLetter b && isDigit c then do
+      dest <- lift $ toSquare [b,c]
+      let srcX = if isLetter a then fmap fst (toSquare [a,'1']) else Nothing
+      let srcY = if isDigit a then fmap snd (toSquare ['a',a]) else Nothing
+      check <- has cross
+      mate <- has hash
+      return $ mkStencil returnKnight pc srcX srcY dest mtype check mate
+    else do
+      fail "Invalid src/dest declaration"
+  where
+    has :: Char -> Parser Bool
+    has c = option False (fmap (return True) (char c))
+    lookupChar :: a -> [(Char, a)] -> Parser a
+    lookupChar def dict = option def (fmap (flip lookupJust dict) (oneOf (map fst dict)))

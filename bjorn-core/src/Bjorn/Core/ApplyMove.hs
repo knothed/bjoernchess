@@ -1,5 +1,5 @@
 module Bjorn.Core.ApplyMove (
-    moveValid, moveWins, stalemate, applyMove
+    moveValid, moveWins, stalemate, applyMove, givesPawnCheck
 ) where
 
 import Bjorn.Core.MoveGen
@@ -35,11 +35,15 @@ applyMove pos move = Position { pieces = newPieces, kingMoves = newKingMoves, to
     newPiece = (pawnMod (piece move), dest move, player)
     pawnMod (Pawn True) = Pawn (moveType move /= Double)
     pawnMod x = x
-    pawnCheck = isPawn (piece move) && any (flip elem [(x-1,y+k), (x+1,y+k)]) (king pos (opp player)) where k = mvmtDir player
-                                                                                                            (x,y) = dest move
     removeSrcDest = filter (not . flip elem [src move, dest move] . snd3)
-    removeKing = if pawnCheck || knightCheck move then filter (\(pc, _, col) -> pc == King && col == opp player) else id
+    removeKing = if givesPawnCheck pos move || knightCheck move then filter (\(pc, _, col) -> pc == King && col == opp player) else id
 
     newKingMoves = [(player, modify $ lookupJust player (kingMoves pos)), (opp player, lookupJust (opp player) (kingMoves pos))]
     modify moves = KingMoves { knight = knight moves && moveType move /= Knight, boomerang = boomerang moves && moveType move /= Boomerang }
     newPendingKnight = knightCheck move && hasKnight pos (opp player)
+
+givesPawnCheck :: PosRepr a => a -> Move -> Bool
+givesPawnCheck pos move = isPawn (piece move) && any (flip elem [(x-1,y+k), (x+1,y+k)]) (king pos (opp player)) where
+    player = whoseTurn pos
+    k = mvmtDir player
+    (x,y) = dest move
