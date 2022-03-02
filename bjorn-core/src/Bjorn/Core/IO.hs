@@ -27,8 +27,15 @@ import Text.Parsec
 
 type Parser a = ParsecT String () Maybe a
 
+-- Parse a string using the given parser. Requires the string to end after the parser succeeded.
 tryParse :: Parser a -> String -> Maybe a
-tryParse p = either (const Nothing) Just <=< runParserT p () ""
+tryParse p = either (const Nothing) Just <=< runParserT (reqEof p) () ""
+
+reqEof :: Parser a -> Parser a
+reqEof p = do
+  res <- p
+  eof
+  return res
 
 ---- Square IO ("a8")
 showSquare :: Square -> String
@@ -183,7 +190,6 @@ parseMove pos str = case tryParse parseMoveStencil str of
       srcOk sq = all ((==) (fst sq)) (srcX stencil) && all ((==) (snd sq)) (srcY stencil)
       matches stencil move = pieceEq (piece move) (piece' stencil) && dest move == dest' stencil && srcOk (src move)
       pieceEq a b = isPawn a && isPawn b || a == b
-
 
 data MoveStencil = MoveStencil {
   returnKnightCheck' :: Bool,

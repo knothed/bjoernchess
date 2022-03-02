@@ -115,6 +115,3 @@ neighbors (x,y) = filter validSquare [(x-1,y), (x+1,y), (x,y-1), (x,y+1), (x-1,y
 -- All onboard squares a knight jump away.
 knights :: Square -> [Square]
 knights (x,y) = filter validSquare [(x-1,y-2), (x-1,y+2), (x+1,y-2), (x+1,y+2), (x-2,y-1), (x-2,y+1), (x+2,y-1), (x+2,y+1)]
-
-knightAway :: Square -> Square -> Bool
-knightAway (x1,y1) (x2,y2) = elem (abs (x1-y1), abs (x2-y2)) [(1,2), (2,1)]

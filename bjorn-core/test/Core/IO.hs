@@ -45,6 +45,7 @@ pieceTests = [
 pieceSqTests = [
     ("Pc6", Just (Pawn True, (3,6), White)),
     ("qb5", Just (Pawn False, (2,5), Black)),
+    ("qb12", Nothing),
     ("ph0", Nothing),
     ("Öb1", Nothing)
   ]
@@ -64,6 +65,7 @@ kingMovesTests = [
 positionTests = [
     ("Kc4,Bd4,bg2;Bk;n;b", Just),
     ("qf3,pa8;-;y;w", Just),
+    ("qf3,pa8;-;y;w2", pure Nothing),
     ("qf3,pa8;-;w", pure Nothing),
     ("Kc4,;kD;n;b", pure Nothing),
     ("fc4;;n;b", pure Nothing),
